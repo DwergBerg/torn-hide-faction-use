@@ -8,6 +8,15 @@ A tiny userscript for [Torn City](https://www.torn.com) that hides the **"Use an
 
 Also available on Greasy Fork.
 
+## Usage
+
+The script hides the button by default. Use the toggle in your userscript manager (Tampermonkey/Violentmonkey icon) to temporarily show it - handy during wars when you want quick access to faction meds:
+
+- **✅ ON - hiding "Use another from faction" (click to show)** - button is hidden (default)
+- **⚔️ OFF - showing "Use another from faction" (click to hide)** - button is visible
+
+The toggle applies immediately (no page reload needed) and is remembered across sessions in this browser.
+
 ## Install
 
 **Option 1 - Greasy Fork (recommended)**  
