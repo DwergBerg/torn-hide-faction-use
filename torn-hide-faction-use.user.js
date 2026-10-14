@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Torn - Hide "Use another from faction"
 // @namespace    torn.hide-fac-use
-// @version      1.3
-// @description  Hides the "Use another from faction" button in the items menu. Toggle directly on the items page - works in Tampermonkey, Violentmonkey and Torn PDA. Display-only - does not click, use or automate anything.
+// @version      1.4
+// @description  Hides the "Use another from faction" button that appears after using an item. Small toggle in the top-right corner of the item-use popup. Works in Tampermonkey, Violentmonkey and Torn PDA. Display-only - does not click, use or automate anything.
 // @author       DwergBerg
 // @license      MIT
 // @match        https://www.torn.com/*
@@ -44,29 +44,48 @@
     if (box) box.checked = hiding;
   }
 
-  function onItemsPage() {
-    if (/[?&]page=items/.test(location.search)) return true;
-    return !!document.querySelector('.items-cont, #inventory-root, ul.items-list, .items-list');
+  // Walk up from the faction link to the popup container:
+  // a small dialog-sized box (wide enough for the message, tall enough to
+  // contain message + buttons, but smaller than a page-sized overlay).
+  function findPopup(link) {
+    var el = link;
+    for (var i = 0; i < 8 && el.parentElement; i++) {
+      el = el.parentElement;
+      var r = el.getBoundingClientRect();
+      if (r.width >= 260 && r.width <= 800 && r.height >= 110) return el;
+    }
+    return null;
   }
 
   function mountToggle() {
-    if (document.getElementById(TOGGLE_ID) || !onItemsPage()) return;
-    var host = document.querySelector('#inventory-root, .items-cont, #mainContainer') || document.body;
+    var link = document.querySelector('a.next-act[data-fac="1"]');
+    if (!link) return;
+    var container = findPopup(link);
+    if (!container || container.querySelector('#' + TOGGLE_ID)) return;
 
+    if (window.getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
+
+    // Top-right corner of the popup, next to the X button - deliberately far
+    // from the action links so it cannot be hit accidentally.
     var wrap = document.createElement('label');
     wrap.id = TOGGLE_ID;
     wrap.style.cssText =
-      'display:inline-flex;align-items:center;gap:6px;margin:6px;padding:4px 10px;' +
-      'background:#161616;border:1px solid #444;border-radius:4px;color:#ccc;' +
-      'font-size:12px;font-family:Arial,sans-serif;cursor:pointer;user-select:none;';
+      'position:absolute;top:8px;right:34px;z-index:9999;' +
+      'display:inline-flex;align-items:center;gap:4px;padding:2px 6px;' +
+      'background:rgba(22,22,22,0.8);border:1px solid #444;border-radius:4px;' +
+      'color:#ccc;font-size:11px;font-family:Arial,sans-serif;cursor:pointer;user-select:none;';
+    wrap.title = 'Show/hide the "Use another from faction" option';
 
     var box = document.createElement('input');
     box.type = 'checkbox';
     box.id = TOGGLE_ID + '-box';
     box.checked = hiding;
+    box.style.accentColor = '#4caf50';
 
     var text = document.createElement('span');
-    text.textContent = 'Hide "use another from faction"';
+    text.textContent = 'hide faction use';
 
     box.addEventListener('change', function () {
       hiding = box.checked;
@@ -76,15 +95,7 @@
 
     wrap.appendChild(box);
     wrap.appendChild(text);
-
-    if (host === document.body) {
-      // Could not find the items container - pin the checkbox to the corner instead.
-      wrap.style.position = 'fixed';
-      wrap.style.bottom = '10px';
-      wrap.style.right = '10px';
-      wrap.style.zIndex = '99999';
-    }
-    host.appendChild(wrap);
+    container.appendChild(wrap);
   }
 
   var scheduled = false;
